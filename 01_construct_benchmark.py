@@ -32,19 +32,24 @@ stocks = db.raw_sql(stock_query)
 stocks['date'] = pd.to_datetime(stocks['date'])
 stocks.set_index('date', inplace=True)
 stocks.columns = ['Stock_Returns']
+stocks.index.name = 'date'
 
 stocks.to_csv(os.path.join(raw_dir, 'crsp_stocks_raw.csv'))
 print("Raw Stock Data saved.")
 
 # 4. Bonds (FRED)
 print("\nDownloading Bonds (FRED)...")
-yield_data = fred.get_series('DGS10', observation_start=START_DATE)
-yield_data.to_csv(os.path.join(raw_dir, 'fred_bonds_raw.csv'))
+yield_series = fred.get_series('DGS10', observation_start=START_DATE)
+
+# Convert Series to DataFrame for clean CSV saving
+yield_df = yield_series.to_frame(name='DGS10')
+yield_df.index.name = 'date'
+yield_df.to_csv(os.path.join(raw_dir, 'fred_bonds_raw.csv'))
 print("Raw Bond Data saved.")
 
-# Duration Math
+# Duration Math (using the Series for calculation)
 duration = 7.0
-daily_yield_decimal = yield_data / 100
+daily_yield_decimal = yield_series / 100
 daily_income = daily_yield_decimal / 252
 yield_change = daily_yield_decimal.diff()
 
@@ -56,6 +61,7 @@ print("\nMerging and Calculating...")
 df = pd.merge(stocks, bond_returns, left_index=True, right_index=True, how='inner')
 df['60_40_Returns'] = (0.60 * df['Stock_Returns']) + (0.40 * df['Bond_Returns'])
 df['60_40_Equity'] = (1 + df['60_40_Returns']).cumprod()
+df.index.name = 'date'
 
 print(df.head(10))
 
