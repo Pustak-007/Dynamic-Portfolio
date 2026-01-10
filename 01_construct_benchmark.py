@@ -47,7 +47,7 @@ yield_df.index.name = 'date'
 yield_df.to_csv(os.path.join(raw_dir, 'fred_bonds_raw.csv'))
 print("Raw Bond Data saved.")
 
-# Duration Math (using the Series for calculation)
+# Duration Math
 duration = 7.0
 daily_yield_decimal = yield_series / 100
 daily_income = daily_yield_decimal / 252
@@ -59,8 +59,15 @@ bond_returns.name = 'Bond_Returns'
 # 5. Merge & Calculate Benchmark
 print("\nMerging and Calculating...")
 df = pd.merge(stocks, bond_returns, left_index=True, right_index=True, how='inner')
+
+# Calculate Portfolio Returns
 df['60_40_Returns'] = (0.60 * df['Stock_Returns']) + (0.40 * df['Bond_Returns'])
+
+# Calculate Equity Curves (Growth of $1) for ALL components
+df['Stock_Equity'] = (1 + df['Stock_Returns']).cumprod()
+df['Bond_Equity']  = (1 + df['Bond_Returns']).cumprod()
 df['60_40_Equity'] = (1 + df['60_40_Returns']).cumprod()
+
 df.index.name = 'date'
 
 print(df.head(10))
