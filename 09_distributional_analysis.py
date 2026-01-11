@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import scipy.stats as stats
 import os
 
 # 1. Setup
@@ -24,7 +25,7 @@ df['Stocks'] = bench_df['Stock_Returns']
 df['Bonds'] = bench_df['Bond_Returns']
 df.dropna(inplace=True)
 
-# 3. Stats Function (Removed Median)
+# 3. Stats Function
 def get_detailed_stats(returns, name):
     mean = returns.mean() * 252
     std = returns.std() * np.sqrt(252)
@@ -52,7 +53,7 @@ def get_detailed_stats(returns, name):
     return text
 
 # ==========================================
-# FIGURE 1: Dynamic vs 60/40
+# FIGURE 1: Dynamic vs 60/40 (KDE)
 # ==========================================
 fig1, ax1 = plt.subplots(figsize=(14, 8))
 
@@ -68,7 +69,7 @@ ax1.text(0.98, 0.95, text_6040, transform=ax1.transAxes, fontsize=9, verticalali
          horizontalalignment='right', bbox=dict(boxstyle='round', facecolor='gray', alpha=0.1))
 
 ax1.set_title('Strategy vs Benchmark Distribution', fontsize=14)
-ax1.set_xlabel('Daily Return') # Fixed Label
+ax1.set_xlabel('Daily Return')
 ax1.set_xlim(-0.04, 0.04)
 ax1.grid(True, alpha=0.3)
 ax1.legend()
@@ -79,7 +80,7 @@ plt.savefig(fig1_path, dpi=300, bbox_inches='tight')
 print(f"Figure 1 saved to: {fig1_path}")
 
 # ==========================================
-# FIGURE 2: Asset Classes
+# FIGURE 2: Asset Classes (KDE)
 # ==========================================
 fig2, ax2 = plt.subplots(figsize=(14, 8))
 
@@ -99,7 +100,7 @@ ax2.text(0.98, 0.95, text_bm, transform=ax2.transAxes, fontsize=8, verticalalign
          horizontalalignment='right', bbox=dict(boxstyle='round', facecolor='gray', alpha=0.1))
 
 ax2.set_title('Asset Class Return Distributions', fontsize=14)
-ax2.set_xlabel('Daily Return') # Fixed Label
+ax2.set_xlabel('Daily Return')
 ax2.set_xlim(-0.04, 0.04)
 ax2.grid(True, alpha=0.3)
 ax2.legend()
@@ -108,5 +109,67 @@ plt.tight_layout()
 fig2_path = os.path.join(fig_dir, 'distribution_assets.png')
 plt.savefig(fig2_path, dpi=300, bbox_inches='tight')
 print(f"Figure 2 saved to: {fig2_path}")
+
+# ==========================================
+# FIGURE 3: Q-Q Plots (Strategy vs Benchmark)
+# ==========================================
+fig3, (ax3a, ax3b) = plt.subplots(1, 2, figsize=(16, 7))
+fig3.suptitle('Normality Test: Dynamic Strategy vs 60/40', fontsize=16)
+
+# Dynamic
+stats.probplot(df['Dynamic'], dist="norm", plot=ax3a)
+ax3a.get_lines()[0].set_markerfacecolor('purple')
+ax3a.get_lines()[0].set_markeredgecolor('purple')
+ax3a.get_lines()[0].set_alpha(0.6)
+ax3a.get_lines()[0].set_markersize(2.0)
+ax3a.get_lines()[1].set_color('black')
+ax3a.set_title("Dynamic Strategy")
+ax3a.grid(True, alpha=0.3)
+
+# 60/40
+stats.probplot(df['60/40'], dist="norm", plot=ax3b)
+ax3b.get_lines()[0].set_markerfacecolor('gray')
+ax3b.get_lines()[0].set_markeredgecolor('gray')
+ax3b.get_lines()[0].set_alpha(0.6)
+ax3b.get_lines()[0].set_markersize(2.0)
+ax3b.get_lines()[1].set_color('black')
+ax3b.set_title("60/40 Benchmark")
+ax3b.grid(True, alpha=0.3)
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+fig3_path = os.path.join(fig_dir, 'qq_strategy.png')
+plt.savefig(fig3_path, dpi=300, bbox_inches='tight')
+print(f"Figure 3 saved to: {fig3_path}")
+
+# ==========================================
+# FIGURE 4: Q-Q Plots (Stocks vs Bonds)
+# ==========================================
+fig4, (ax4a, ax4b) = plt.subplots(1, 2, figsize=(16, 7))
+fig4.suptitle('Normality Test: Asset Classes', fontsize=16)
+
+# Stocks
+stats.probplot(df['Stocks'], dist="norm", plot=ax4a)
+ax4a.get_lines()[0].set_markerfacecolor('green')
+ax4a.get_lines()[0].set_markeredgecolor('green')
+ax4a.get_lines()[0].set_alpha(0.6)
+ax4a.get_lines()[0].set_markersize(2.0)
+ax4a.get_lines()[1].set_color('black')
+ax4a.set_title("Stocks (S&P 500)")
+ax4a.grid(True, alpha=0.3)
+
+# Bonds
+stats.probplot(df['Bonds'], dist="norm", plot=ax4b)
+ax4b.get_lines()[0].set_markerfacecolor('red')
+ax4b.get_lines()[0].set_markeredgecolor('red')
+ax4b.get_lines()[0].set_alpha(0.6)
+ax4b.get_lines()[0].set_markersize(2.0)
+ax4b.get_lines()[1].set_color('black')
+ax4b.set_title("Bonds (10Y Treas)")
+ax4b.grid(True, alpha=0.3)
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+fig4_path = os.path.join(fig_dir, 'qq_assets.png')
+plt.savefig(fig4_path, dpi=300, bbox_inches='tight')
+print(f"Figure 4 saved to: {fig4_path}")
 
 plt.show()
