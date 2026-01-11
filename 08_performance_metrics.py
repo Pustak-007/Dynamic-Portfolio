@@ -9,96 +9,95 @@ results_dir = os.path.join(base_dir, 'results')
 
 os.makedirs(results_dir, exist_ok=True)
 
-# 2. Load Data
-print("Loading Data...")
-# Load Strategy Returns
+# 2. Load and Merge Data
+print("Loading all return streams...")
 dyn_df = pd.read_csv(os.path.join(mod_dir, 'final_backtest_results.csv'), index_col='date', parse_dates=True)
-
-# Load Risk-Free Rate (Daily)
+bench_df = pd.read_csv(os.path.join(mod_dir, 'benchmark_portfolio_1970_2025.csv'), index_col='date', parse_dates=True)
 rf_df = pd.read_csv(os.path.join(mod_dir, 'risk_free_daily.csv'), index_col='date', parse_dates=True)
 
-# 3. Merge & Align Risk-Free Rate
-# We align Rf to the Strategy Timeline. ffill() handles weekends/holidays if needed.
-df = dyn_df.join(rf_df, how='left').ffill()
+# Merge everything into one Master DF
+df = dyn_df[['Regime', 'Dynamic_Returns', '60_40_Returns']].join(
+    bench_df[['Stock_Returns', 'Bond_Returns']], how='inner'
+).join(rf_df, how='left').ffill().dropna()
 
-# 4. Calculate Excess Returns (The "Professional" Step)
-# Strategy Return minus Risk-Free Rate
-df['Dyn_Excess']   = df['Dynamic_Returns'] - df['Risk_Free_Return']
-df['60_40_Excess'] = df['60_40_Returns'] - df['Risk_Free_Return']
+# 3. Calculate Excess Returns (Strategy - Rf)
+strategies = {
+    'Dynamic': 'Dynamic_Returns',
+    '60/40': '60_40_Returns',
+    'Stocks': 'Stock_Returns',
+    'Bonds': 'Bond_Returns'
+}
 
-# 5. Define Metric Engine
-def calculate_metrics(returns, excess_returns):
-    """
-    Calculates Annualized Metrics.
-    For Regimes (discontinuous data), we use Annualized Average Return (Mean * 252).
-    """
+for name, col in strategies.items():
+    df[f'{name}_Excess'] = df[col] - df['Risk_Free_Return']
+
+# 4. Define Smart Metric Engine
+def calculate_metrics(returns, excess_returns, is_continuous=False):
     if len(returns) < 2:
-        return pd.Series([0,0,0,0,0], index=['Ann. Return', 'Volatility', 'Sharpe', 'Sortino', 'Max DD'])
+        return pd.Series([0,0,0,0,0], index=['Return (Ann)', 'Volatility', 'Sharpe', 'Sortino', 'Max DD'])
     
-    # 1. Annualized Return (Run Rate)
-    # We use arithmetic mean * 252 for regime attribution (standard attribution practice)
-    ann_return = returns.mean() * 252
+    # Return Calculation
+    if is_continuous:
+        # CAGR (Geometric) for Overall
+        total_ret = (1 + returns).prod()
+        n_years = len(returns) / 252
+        ann_return = (total_ret ** (1 / n_years)) - 1
+    else:
+        # Arithmetic Mean for Regimes (Run Rate)
+        ann_return = returns.mean() * 252
     
-    # 2. Volatility (Annualized)
-    volatility = returns.std() * np.sqrt(252)
+    # Volatility
+    vol = returns.std() * np.sqrt(252)
     
-    # 3. Sharpe Ratio (The Core Metric)
-    # (Mean Daily Excess Return * 252) / (Std Dev of Excess * sqrt(252))
-    sharpe = (excess_returns.mean() * 252) / (excess_returns.std() * np.sqrt(252))
+    # Sharpe
+    sharpe = (excess_returns.mean() * 252) / (excess_returns.std() * np.sqrt(252) + 1e-9)
     
-    # 4. Sortino Ratio (Penalizes only downside volatility)
-    # We take returns below 0, calculate their std dev
-    negative_returns = returns[returns < 0]
-    downside_dev = negative_returns.std() * np.sqrt(252)
-    sortino = (excess_returns.mean() * 252) / (downside_dev + 1e-9)
+    # Sortino
+    downside = returns[returns < 0]
+    downside_vol = downside.std() * np.sqrt(252)
+    sortino = (excess_returns.mean() * 252) / (downside_vol + 1e-9)
     
-    # 5. Max Drawdown (While IN this specific state)
-    # We reconstruct a theoretical equity curve just for this slice
-    cum_ret = (1 + returns).cumprod()
-    peak = cum_ret.cummax()
-    drawdown = (cum_ret - peak) / peak
-    max_dd = drawdown.min()
+    # Max DD
+    cum = (1 + returns).cumprod()
+    dd = (cum - cum.cummax()) / cum.cummax()
+    max_dd = dd.min()
     
-    return pd.Series([ann_return, volatility, sharpe, sortino, max_dd], 
-                     index=['Ann. Return', 'Volatility', 'Sharpe', 'Sortino', 'Max DD'])
+    return pd.Series([ann_return, vol, sharpe, sortino, max_dd], 
+                     index=['Return (Ann)', 'Volatility', 'Sharpe', 'Sortino', 'Max DD'])
 
-# 6. Calculate OVERALL Metrics
-print("\n--- Calculating Overall Metrics ---")
-stats_dyn = calculate_metrics(df['Dynamic_Returns'], df['Dyn_Excess'])
-stats_6040 = calculate_metrics(df['60_40_Returns'], df['60_40_Excess'])
+# 5. Calculate OVERALL Metrics (Continuous = True)
+print("\n--- Overall Performance (1971-Present) ---")
+overall_results = {}
+for name, col in strategies.items():
+    overall_results[name] = calculate_metrics(df[col], df[f'{name}_Excess'], is_continuous=True)
 
-overall_df = pd.DataFrame({'Dynamic Strategy': stats_dyn, '60/40 Benchmark': stats_6040}).T
+overall_df = pd.DataFrame(overall_results).T
 print(overall_df)
 
-# 7. Calculate REGIME-SPECIFIC Metrics
-print("\n--- Calculating Regime Breakdown ---")
-regimes = ['Goldilocks', 'Reflation', 'Stagflation', 'Deflation']
-results_list = []
+# 6. Calculate REGIME Metrics (Continuous = False)
+print("\n--- Performance by Macro Regime ---")
+regime_data = {}
 
-for regime in regimes:
-    # Filter for specific days
+for regime in ['Goldilocks', 'Reflation', 'Stagflation', 'Deflation']:
     subset = df[df['Regime'] == regime]
+    regime_results = {}
     
-    # Calc Metrics for Dynamic
-    dyn_res = calculate_metrics(subset['Dynamic_Returns'], subset['Dyn_Excess'])
-    dyn_res.name = f'Dynamic ({regime})'
+    for name, col in strategies.items():
+        stats = calculate_metrics(subset[col], subset[f'{name}_Excess'], is_continuous=False)
+        regime_results[name] = stats
     
-    # Calc Metrics for Benchmark
-    bench_res = calculate_metrics(subset['60_40_Returns'], subset['60_40_Excess'])
-    bench_res.name = f'60/40 ({regime})'
-    
-    results_list.append(dyn_res)
-    results_list.append(bench_res)
+    # Create a DataFrame for this regime and add to list
+    regime_df = pd.DataFrame(regime_results).T
+    print(f"\n[{regime} Stats]")
+    print(regime_df)
+    regime_data[regime] = regime_df
 
-regime_df = pd.DataFrame(results_list)
-print(regime_df)
-'''
-# 8. Save Reports
-overall_path = os.path.join(results_dir, 'performance_summary_overall.csv')
-regime_path = os.path.join(results_dir, 'performance_summary_regimes.csv')
+# 7. Save Reports
+overall_df.to_csv(os.path.join(results_dir, 'metrics_overall_comprehensive.csv'))
 
-overall_df.to_csv(overall_path)
-regime_df.to_csv(regime_path)
+# Save Regime tables individually or combined? 
+# Let's save a combined CSV with a MultiIndex
+combined_regime_df = pd.concat(regime_data, axis=0)
+combined_regime_df.to_csv(os.path.join(results_dir, 'metrics_regime_comprehensive.csv'))
 
-print(f"\nReports saved to: {results_dir}")
-'''
+print(f"\nComprehensive Reports saved to: {results_dir}")
