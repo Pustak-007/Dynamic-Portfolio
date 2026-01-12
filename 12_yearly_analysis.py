@@ -13,50 +13,51 @@ results_dir = os.path.join(base_dir, 'results')
 os.makedirs(fig_dir, exist_ok=True)
 os.makedirs(results_dir, exist_ok=True)
 
-# 2. Load Data
-print("Loading Backtest Data...")
-df = pd.read_csv(os.path.join(mod_dir, 'final_backtest_results.csv'), index_col='date', parse_dates=True)
+# 2. Load Data (All Components)
+print("Loading Data...")
+dyn_df = pd.read_csv(os.path.join(mod_dir, 'final_backtest_results.csv'), index_col='date', parse_dates=True)
+comp_df = pd.read_csv(os.path.join(mod_dir, 'benchmark_portfolio_1970_2025.csv'), index_col='date', parse_dates=True)
+
+# Merge Equity Curves
+df = pd.DataFrame(index=dyn_df.index)
+df['Dynamic'] = dyn_df['Dynamic_Equity']
+df['60/40'] = dyn_df['60_40_Equity']
+# Align Stocks/Bonds to the same start date
+common_index = df.index.intersection(comp_df.index)
+df['Stocks'] = comp_df.loc[common_index, 'Stock_Equity']
+df['Bonds'] = comp_df.loc[common_index, 'Bond_Equity']
 
 # 3. Calculate Yearly Returns
-# We resample to Year End ('YE') and take the last equity value
-yearly_equity = df[['Dynamic_Equity', '60_40_Equity']].resample('YE').last()
-
-# Calculate % Change from year to year
+yearly_equity = df.resample('YE').last()
 yearly_returns = yearly_equity.pct_change()
 
-# Handle the first year (1971) which might be NaN due to pct_change
-# We calculate it manually based on the start value (1.0)
-first_year_idx = yearly_returns.index[0]
-yearly_returns.loc[first_year_idx, 'Dynamic_Equity'] = yearly_equity.loc[first_year_idx, 'Dynamic_Equity'] - 1
-yearly_returns.loc[first_year_idx, '60_40_Equity'] = yearly_equity.loc[first_year_idx, '60_40_Equity'] - 1
+# Handle First Year (Manual Calculation from 1.0 base or first available)
+# Since curves start > 1.0 sometimes due to indexing, pct_change is safer, 
+# but for the very first row, we check the growth from the start of data.
+first_idx = yearly_returns.index[0]
+start_val = df.iloc[0]
+end_val = yearly_equity.iloc[0]
+yearly_returns.loc[first_idx] = (end_val / start_val) - 1
 
-# Rename columns for display
-yearly_returns.columns = ['Dynamic Strategy', '60/40 Benchmark']
-yearly_returns.index = yearly_returns.index.year # Use just the year number
+yearly_returns.index = yearly_returns.index.year
 
-# Save Data
+# Save
 print("\n--- Yearly Returns (Tail) ---")
 print(yearly_returns.tail())
-yearly_returns.to_csv(os.path.join(results_dir, 'yearly_returns.csv'))
-print("Yearly returns saved.")
+yearly_returns.to_csv(os.path.join(results_dir, 'yearly_returns_comprehensive.csv'))
 
 # 4. Visualization (Heatmap)
-plt.figure(figsize=(10, 15))  # Tall figure to fit 50+ years
+plt.figure(figsize=(12, 18)) # Wider and Taller
 
-# Create Heatmap
-# cmap='RdYlGn' maps Red (Loss) to Green (Gain)
-sns.heatmap(yearly_returns, annot=True, fmt=".1%", cmap='RdYlGn', center=0,
-            cbar=False, linewidths=0.5, xticklabels=True)
+sns.heatmap(yearly_returns, annot=True, fmt=".1%", cmap='RdYlGn', center=0, cbar=False, linewidths=0.5)
 
-# Move x-axis labels to top
-plt.gca().xaxis.tick_top()
-plt.gca().xaxis.set_label_position('top')
-
-plt.title('Yearly Performance Heatmap (1971-Present)', fontsize=14)
+plt.title('Yearly Performance Heatmap: Asset Class Comparison', fontsize=16)
 plt.ylabel('Year')
+plt.tick_params(axis='x', labelsize=12, labeltop=True, labelbottom=False) # Put labels on top for readability
 plt.tight_layout()
 
-save_path = os.path.join(fig_dir, 'yearly_heatmap.png')
+save_path = os.path.join(fig_dir, 'yearly_heatmap_comprehensive.png')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
 print(f"Heatmap saved to: {save_path}")
+
 plt.show()
