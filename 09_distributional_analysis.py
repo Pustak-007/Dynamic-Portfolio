@@ -12,17 +12,17 @@ fig_dir = os.path.join(base_dir, 'figures')
 
 os.makedirs(fig_dir, exist_ok=True)
 
-# 2. Load Data
-print("Loading Backtest Data...")
-dyn_df = pd.read_csv(os.path.join(mod_dir, 'final_backtest_results.csv'), index_col='date', parse_dates=True)
-bench_df = pd.read_csv(os.path.join(mod_dir, 'benchmark_portfolio_1970_2025.csv'), index_col='date', parse_dates=True)
+# 2. Load Data (Using the Master Consolidated File)
+print("Loading Consolidated Data...")
+master_df = pd.read_csv(os.path.join(mod_dir, 'consolidated_portfolio_rebased.csv'), index_col='date', parse_dates=True)
 
-# Merge Returns
-df = pd.DataFrame(index=dyn_df.index)
-df['Dynamic'] = dyn_df['Dynamic_Returns']
-df['60/40'] = dyn_df['60_40_Returns']
-df['Stocks'] = bench_df['Stock_Returns']
-df['Bonds'] = bench_df['Bond_Returns']
+# Prepare DataFrame for Analysis (Mapping columns to friendly names)
+df = pd.DataFrame(index=master_df.index)
+df['Dynamic'] = master_df['Dynamic_Returns']
+df['60/40']   = master_df['60_40_Returns']
+df['Stocks']  = master_df['Stock_Returns']
+df['Bonds']   = master_df['Bond_Returns']
+
 df.dropna(inplace=True)
 
 # 3. Stats Function
