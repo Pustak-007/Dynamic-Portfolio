@@ -12,47 +12,66 @@ fig_dir = os.path.join(base_dir, 'figures')
 
 os.makedirs(fig_dir, exist_ok=True)
 
-# 2. Load Data
+# 2. Load Data (Updated to use Consolidated File)
 print("Loading Data...")
-dyn_df = pd.read_csv(os.path.join(mod_dir, 'final_backtest_results.csv'), index_col='date', parse_dates=True)
-comp_df = pd.read_csv(os.path.join(mod_dir, 'benchmark_portfolio_1970_2025.csv'), index_col='date', parse_dates=True)
+master_df = pd.read_csv(os.path.join(mod_dir, 'consolidated_portfolio_rebased.csv'), index_col='date', parse_dates=True)
 
-df = pd.DataFrame(index=dyn_df.index)
-df['Dynamic'] = dyn_df['Dynamic_Equity']
-df['60/40'] = dyn_df['60_40_Equity']
-df['Stocks'] = comp_df['Stock_Equity']
-df['Bonds'] = comp_df['Bond_Equity']
+# Prepare DataFrame for Drawdown Analysis
+df = pd.DataFrame(index=master_df.index)
+df['Dynamic'] = master_df['Dynamic_Equity']
+df['60/40']   = master_df['60_40_Equity']
+df['Stocks']  = master_df['Stock_Equity']
+df['Bonds']   = master_df['Bond_Equity']
 df.dropna(inplace=True)
 
 # 3. Calculate Drawdowns
 dd = (df / df.cummax()) - 1
 
-# 4. Helper: Stats Calculation
+# 4. Helper: Calculate Advanced Drawdown Statistics
 def get_dd_stats(series):
+    # Identify drawdown periods
     is_dd = series < 0
+    
+    # Identify starts (0 -> neg) and ends (neg -> 0)
+    # FIX: Use fill_value=False inside shift() to maintain boolean dtype
     starts = (~is_dd).shift(1, fill_value=False) & is_dd
     ends = is_dd.shift(1, fill_value=False) & (~is_dd)
     
+    # Get dates
     start_dates = series.index[starts]
     end_dates = series.index[ends]
     
+    # Handle case where current drawdown hasn't recovered
     if len(start_dates) > len(end_dates):
         end_dates = end_dates.append(pd.Index([series.index[-1]]))
         
     stats = []
     for s, e in zip(start_dates, end_dates):
+        # Slice the specific drawdown window
         window = series.loc[s:e]
+        
+        # Trough (Min value and date)
         trough_val = window.min()
-        trough_date = window.idxmin()
+        # trough_date = window.idxmin() 
+        
+        # Duration (Start to Recovery)
         duration = (e - s).days
+        
+        # Recovery (Trough to Recovery)
+        trough_date = window.idxmin()
         recovery = (e - trough_date).days
         
-        stats.append({'depth': trough_val, 'duration': duration, 'recovery': recovery})
+        stats.append({
+            'depth': trough_val,
+            'duration': duration,
+            'recovery': recovery
+        })
         
     if not stats:
         return None
         
     df_stats = pd.DataFrame(stats)
+    
     return {
         'avg_dd': df_stats['depth'].mean(),
         'med_dd': df_stats['depth'].median(),
@@ -64,12 +83,15 @@ def get_dd_stats(series):
         'count': len(df_stats)
     }
 
-# 5. Helper: Plotting
+# 5. Helper: Plotting with Stats Box
 def plot_drawdown(ax, series, name, color, stats_loc='lower left'):
+    # Plot Line & Fill
     ax.plot(series.index, series, label=name, color=color, linewidth=1.5, alpha=0.9)
     ax.fill_between(series.index, series, 0, color=color, alpha=0.1)
     
+    # Calculate Stats
     stats = get_dd_stats(series)
+    
     if stats:
         text_str = (
             f"Statistics ({name}):\n"
@@ -86,6 +108,8 @@ def plot_drawdown(ax, series, name, color, stats_loc='lower left'):
             f"---------------------------\n"
             f"Total Drawdowns: {stats['count']}"
         )
+        
+        # Create Text Box
         at = AnchoredText(text_str, loc=stats_loc, prop=dict(size=8), frameon=True)
         at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
         at.patch.set_facecolor(color)
@@ -95,26 +119,26 @@ def plot_drawdown(ax, series, name, color, stats_loc='lower left'):
 # ==========================================
 # FIGURE 1: Dynamic vs 60/40
 # ==========================================
-fig1, ax1 = plt.subplots(figsize=(15, 8))
+fig1, ax1 = plt.subplots(figsize=(15, 8)) 
 
 plot_drawdown(ax1, dd['Dynamic'], 'Dynamic Strategy', 'purple', 'lower right')
 plot_drawdown(ax1, dd['60/40'], '60/40 Benchmark', 'gray', 'lower left')
 
-ax1.set_title('Drawdown Analysis: Strategy vs Benchmark (1971-2024)', fontsize=14)
+ax1.set_title('Drawdown Analysis: Strategy vs Benchmark', fontsize=14)
 ax1.set_ylabel('Drawdown (%)')
 ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
 ax1.xaxis.set_major_locator(mdates.YearLocator(3))
 ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
 plt.xticks(rotation=45)
 ax1.grid(True, alpha=0.3)
-ax1.legend(loc='upper right')
+ax1.legend(loc='upper right') 
 
 plt.tight_layout()
 fig1.savefig(os.path.join(fig_dir, 'drawdown_strategy.png'), dpi=300, bbox_inches='tight')
 print("Figure 1 saved.")
 
 # ==========================================
-# FIGURE 2: Asset Classes
+# FIGURE 2: Asset Classes (Stacked)
 # ==========================================
 fig2, (ax2a, ax2b, ax2c) = plt.subplots(3, 1, figsize=(15, 12), sharex=True)
 
@@ -122,7 +146,7 @@ plot_drawdown(ax2a, dd['Stocks'], 'Stocks (S&P 500)', 'green', 'lower left')
 plot_drawdown(ax2b, dd['Bonds'], 'Bonds (10Y Treas)', 'red', 'lower left')
 plot_drawdown(ax2c, dd['60/40'], '60/40 Benchmark', 'gray', 'lower left')
 
-ax2a.set_title('Drawdown Analysis: Asset Classes (1971-2024)', fontsize=14)
+ax2a.set_title('Drawdown Analysis: Asset Classes', fontsize=14)
 for ax in [ax2a, ax2b, ax2c]:
     ax.set_ylabel('Drawdown (%)')
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
@@ -145,7 +169,7 @@ fig3, ax3 = plt.subplots(figsize=(15, 8))
 plot_drawdown(ax3, dd['Stocks'], 'Stocks (S&P 500)', 'green', 'lower left')
 plot_drawdown(ax3, dd['Dynamic'], 'Dynamic Strategy', 'purple', 'lower right')
 
-ax3.set_title('Drawdown Analysis: Strategy vs Stocks (1971-2024)', fontsize=14)
+ax3.set_title('Drawdown Analysis: Strategy vs Stocks', fontsize=14)
 ax3.set_ylabel('Drawdown (%)')
 ax3.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
 ax3.xaxis.set_major_locator(mdates.YearLocator(3))
