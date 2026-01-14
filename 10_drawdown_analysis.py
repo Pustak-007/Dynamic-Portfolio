@@ -12,7 +12,7 @@ fig_dir = os.path.join(base_dir, 'figures')
 
 os.makedirs(fig_dir, exist_ok=True)
 
-# 2. Load Data (Updated to use Consolidated File)
+# 2. Load Data
 print("Loading Data...")
 master_df = pd.read_csv(os.path.join(mod_dir, 'consolidated_portfolio_rebased.csv'), 
                         index_col='date', parse_dates=True)
@@ -31,6 +31,7 @@ dd = (df / df.cummax()) - 1
 # 4. Helper: Calculate Advanced Drawdown Statistics
 def get_dd_stats(series):
     is_dd = series < 0
+    # FIX: Use fill_value=False inside shift() to maintain boolean dtype
     starts = (~is_dd).shift(1, fill_value=False) & is_dd
     ends = is_dd.shift(1, fill_value=False) & (~is_dd)
     
@@ -108,10 +109,8 @@ fig1, ax1 = plt.subplots(figsize=(15, 8))
 plot_drawdown(ax1, dd['Dynamic'], 'Dynamic Strategy', 'purple', 'lower right')
 plot_drawdown(ax1, dd['60/40'], '60/40 Benchmark', 'gray', 'lower left')
 
-ax1.set_title('Drawdown Analysis: Strategy vs Benchmark', 
-              fontsize=16, fontweight='bold')                    # ← updated
-ax1.set_ylabel('Drawdown (%)', 
-               fontsize=13, fontweight='bold')                   # ← updated
+ax1.set_title('Drawdown Analysis: Strategy vs Benchmark', fontsize=16, fontweight='bold')
+ax1.set_ylabel('Drawdown (%)', fontsize=13, fontweight='bold')
 
 ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
 ax1.xaxis.set_major_locator(mdates.YearLocator(3))
@@ -125,7 +124,7 @@ fig1.savefig(os.path.join(fig_dir, 'drawdown_strategy.png'), dpi=300, bbox_inche
 print("Figure 1 saved.")
 
 # ==========================================
-# FIGURE 2: Asset Classes (Stacked)
+# FIGURE 2: Asset Classes (3 Panels - Original)
 # ==========================================
 fig2, (ax2a, ax2b, ax2c) = plt.subplots(3, 1, figsize=(15, 12), sharex=True)
 
@@ -133,12 +132,10 @@ plot_drawdown(ax2a, dd['Stocks'], 'Stocks (S&P 500)', 'green', 'lower left')
 plot_drawdown(ax2b, dd['Bonds'], 'Bonds (10Y Treas)', 'red', 'lower left')
 plot_drawdown(ax2c, dd['60/40'], '60/40 Benchmark', 'gray', 'lower left')
 
-ax2a.set_title('Drawdown Analysis: Asset Classes', 
-               fontsize=16, fontweight='bold')                    # ← updated
+ax2a.set_title('Drawdown Analysis: Asset Classes', fontsize=16, fontweight='bold')
 
 for ax in [ax2a, ax2b, ax2c]:
-    ax.set_ylabel('Drawdown (%)', 
-                  fontsize=13, fontweight='bold')                 # ← updated
+    ax.set_ylabel('Drawdown (%)', fontsize=13, fontweight='bold')
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
     ax.grid(True, alpha=0.3)
     ax.legend(loc='upper right')
@@ -159,10 +156,8 @@ fig3, ax3 = plt.subplots(figsize=(15, 8))
 plot_drawdown(ax3, dd['Stocks'], 'Stocks (S&P 500)', 'green', 'lower left')
 plot_drawdown(ax3, dd['Dynamic'], 'Dynamic Strategy', 'purple', 'lower right')
 
-ax3.set_title('Drawdown Analysis: Strategy vs Stocks', 
-              fontsize=16, fontweight='bold')                    # ← updated
-ax3.set_ylabel('Drawdown (%)', 
-               fontsize=13, fontweight='bold')                   # ← updated
+ax3.set_title('Drawdown Analysis: Strategy vs Stocks', fontsize=16, fontweight='bold')
+ax3.set_ylabel('Drawdown (%)', fontsize=13, fontweight='bold')
 
 ax3.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
 ax3.xaxis.set_major_locator(mdates.YearLocator(3))
@@ -174,5 +169,31 @@ ax3.legend(loc='upper right')
 plt.tight_layout()
 fig3.savefig(os.path.join(fig_dir, 'drawdown_vs_stocks.png'), dpi=300, bbox_inches='tight')
 print("Figure 3 saved.")
+
+# ==========================================
+# FIGURE 4: All Drawdowns (4 Panels - New)
+# ==========================================
+fig4, (ax4a, ax4b, ax4c, ax4d) = plt.subplots(4, 1, figsize=(15, 16), sharex=True)
+
+plot_drawdown(ax4a, dd['Stocks'], 'Stocks (S&P 500)', 'green', 'lower left')
+plot_drawdown(ax4b, dd['Bonds'], 'Bonds (10Y Treas)', 'red', 'lower left')
+plot_drawdown(ax4c, dd['60/40'], '60/40 Benchmark', 'gray', 'lower left')
+plot_drawdown(ax4d, dd['Dynamic'], 'Dynamic Strategy', 'purple', 'lower left')
+
+ax4a.set_title('Comprehensive Drawdown Comparison: All Assets', fontsize=16, fontweight='bold')
+
+for ax in [ax4a, ax4b, ax4c, ax4d]:
+    ax.set_ylabel('Drawdown (%)', fontsize=13, fontweight='bold')
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right')
+
+ax4d.xaxis.set_major_locator(mdates.YearLocator(3))
+ax4d.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+fig4.savefig(os.path.join(fig_dir, 'drawdown_all_stacked.png'), dpi=300, bbox_inches='tight')
+print("Figure 4 saved.")
 
 plt.show()
