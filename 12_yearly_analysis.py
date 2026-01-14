@@ -16,7 +16,8 @@ os.makedirs(results_dir, exist_ok=True)
 # 2. Load Consolidated Data
 print("Loading Consolidated Data...")
 # We use the rebased file to ensure 1971 returns are calculated from a clean 1.0 base
-df = pd.read_csv(os.path.join(mod_dir, 'consolidated_portfolio_rebased.csv'), index_col='date', parse_dates=True)
+df = pd.read_csv(os.path.join(mod_dir, 'consolidated_portfolio_rebased.csv'), 
+                 index_col='date', parse_dates=True)
 
 # Select Equity Columns
 equity_cols = ['Dynamic_Equity', '60_40_Equity', 'Stock_Equity', 'Bond_Equity']
@@ -42,17 +43,23 @@ print(yearly_returns.tail())
 yearly_returns.to_csv(os.path.join(results_dir, 'yearly_returns_comprehensive.csv'))
 
 # 4. Visualization (Heatmap)
-plt.figure(figsize=(14, 20)) # Wider to accommodate 4 columns
+plt.figure(figsize=(14, 20))  # Wider to accommodate 4 columns
 
-sns.heatmap(yearly_returns, annot=True, fmt=".1%", cmap='RdYlGn', center=0, cbar=False, linewidths=0.5)
+sns.heatmap(yearly_returns, annot=True, fmt=".1%", cmap='RdYlGn', 
+            center=0, cbar=False, linewidths=0.5)
 
 start_year = yearly_returns.index[0]
 end_year = yearly_returns.index[-1]
-plt.title(f'Yearly Performance Heatmap: Asset Class Comparison ({start_year}-{end_year})', fontsize=16)
-plt.ylabel('Year')
+
+# Bolder & larger title + y-label
+plt.title(f'Yearly Performance Heatmap: Asset Class Comparison ({start_year}-{end_year})', 
+          fontsize=16, fontweight='bold')
+plt.ylabel('Year', fontsize=13, fontweight='bold')
+
 plt.tick_params(axis='x', labelsize=12, labeltop=True, labelbottom=False)
 plt.tight_layout()
 
+# Save Figure
 save_path = os.path.join(fig_dir, 'yearly_heatmap_comprehensive.png')
 plt.savefig(save_path, dpi=300, bbox_inches='tight')
 print(f"Heatmap saved to: {save_path}")
