@@ -66,7 +66,7 @@ def calculate_metrics(returns, excess_returns, is_continuous=False):
                      index=['Return (Ann)', 'Volatility', 'Sharpe', 'Sortino', 'Max DD'])
 
 # 5. Calculate OVERALL Metrics (Continuous = True)
-print("\n--- Overall Performance (1971-Present) ---")
+print("\n--- Overall Performance (1971-2024) ---")
 overall_results = {}
 for name, col in strategies.items():
     overall_results[name] = calculate_metrics(df[col], df[f'{name}_Excess'], is_continuous=True)
@@ -93,8 +93,9 @@ for regime in ['Goldilocks', 'Reflation', 'Stagflation', 'Deflation']:
     regime_data[regime] = regime_df
 
 # 7. Save Reports
+'''
 overall_df.to_csv(os.path.join(results_dir, 'metrics_overall_comprehensive2.csv'))
 combined_regime_df = pd.concat(regime_data, axis=0)
 combined_regime_df.to_csv(os.path.join(results_dir, 'metrics_regime_comprehensive2.csv'))
-
+'''
 print(f"\nComprehensive Reports saved to: {results_dir}")
