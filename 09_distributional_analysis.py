@@ -14,9 +14,10 @@ os.makedirs(fig_dir, exist_ok=True)
 
 # 2. Load Data (Using the Master Consolidated File)
 print("Loading Consolidated Data...")
-master_df = pd.read_csv(os.path.join(mod_dir, 'consolidated_portfolio_rebased.csv'), index_col='date', parse_dates=True)
+master_df = pd.read_csv(os.path.join(mod_dir, 'consolidated_portfolio_rebased.csv'), 
+                        index_col='date', parse_dates=True)
 
-# Prepare DataFrame for Analysis (Mapping columns to friendly names)
+# Prepare DataFrame for Analysis
 df = pd.DataFrame(index=master_df.index)
 df['Dynamic'] = master_df['Dynamic_Returns']
 df['60/40']   = master_df['60_40_Returns']
@@ -68,8 +69,9 @@ ax1.text(0.02, 0.95, text_dyn, transform=ax1.transAxes, fontsize=9, verticalalig
 ax1.text(0.98, 0.95, text_6040, transform=ax1.transAxes, fontsize=9, verticalalignment='top', 
          horizontalalignment='right', bbox=dict(boxstyle='round', facecolor='gray', alpha=0.1))
 
-ax1.set_title('Strategy vs Benchmark Distribution', fontsize=14)
-ax1.set_xlabel('Daily Return')
+ax1.set_title('Strategy vs Benchmark Distribution', fontsize=16, fontweight='bold')
+ax1.set_xlabel('Daily Return', fontsize=13, fontweight='bold')
+ax1.set_ylabel('Density', fontsize=13, fontweight='bold')
 ax1.set_xlim(-0.04, 0.04)
 ax1.grid(True, alpha=0.3)
 ax1.legend()
@@ -99,8 +101,9 @@ ax2.text(0.02, 0.50, text_bnd, transform=ax2.transAxes, fontsize=8, verticalalig
 ax2.text(0.98, 0.95, text_bm, transform=ax2.transAxes, fontsize=8, verticalalignment='top', 
          horizontalalignment='right', bbox=dict(boxstyle='round', facecolor='gray', alpha=0.1))
 
-ax2.set_title('Asset Class Return Distributions', fontsize=14)
-ax2.set_xlabel('Daily Return')
+ax2.set_title('Asset Class Return Distributions', fontsize=16, fontweight='bold')
+ax2.set_xlabel('Daily Return', fontsize=13, fontweight='bold')
+ax2.set_ylabel('Density', fontsize=13, fontweight='bold')
 ax2.set_xlim(-0.04, 0.04)
 ax2.grid(True, alpha=0.3)
 ax2.legend()
@@ -114,7 +117,7 @@ print(f"Figure 2 saved to: {fig2_path}")
 # FIGURE 3: Q-Q Plots (Strategy vs Benchmark)
 # ==========================================
 fig3, (ax3a, ax3b) = plt.subplots(1, 2, figsize=(16, 7))
-fig3.suptitle('Normality Test: Dynamic Strategy vs 60/40', fontsize=16)
+fig3.suptitle('Normality Test: Dynamic Strategy vs 60/40', fontsize=16, fontweight='bold')
 
 # Dynamic
 stats.probplot(df['Dynamic'], dist="norm", plot=ax3a)
@@ -123,7 +126,9 @@ ax3a.get_lines()[0].set_markeredgecolor('purple')
 ax3a.get_lines()[0].set_alpha(0.6)
 ax3a.get_lines()[0].set_markersize(2.0)
 ax3a.get_lines()[1].set_color('black')
-ax3a.set_title("Dynamic Strategy")
+ax3a.set_title("Dynamic Strategy", fontsize=14, fontweight='bold')
+ax3a.set_xlabel('Theoretical Quantiles', fontsize=12, fontweight='bold')
+ax3a.set_ylabel('Ordered Values', fontsize=12, fontweight='bold')
 ax3a.grid(True, alpha=0.3)
 
 # 60/40
@@ -133,7 +138,9 @@ ax3b.get_lines()[0].set_markeredgecolor('gray')
 ax3b.get_lines()[0].set_alpha(0.6)
 ax3b.get_lines()[0].set_markersize(2.0)
 ax3b.get_lines()[1].set_color('black')
-ax3b.set_title("60/40 Benchmark")
+ax3b.set_title("60/40 Benchmark", fontsize=14, fontweight='bold')
+ax3b.set_xlabel('Theoretical Quantiles', fontsize=12, fontweight='bold')
+ax3b.set_ylabel('Ordered Values', fontsize=12, fontweight='bold')
 ax3b.grid(True, alpha=0.3)
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -145,7 +152,7 @@ print(f"Figure 3 saved to: {fig3_path}")
 # FIGURE 4: Q-Q Plots (Stocks vs Bonds)
 # ==========================================
 fig4, (ax4a, ax4b) = plt.subplots(1, 2, figsize=(16, 7))
-fig4.suptitle('Normality Test: Asset Classes', fontsize=16)
+fig4.suptitle('Normality Test: Asset Classes', fontsize=16, fontweight='bold')
 
 # Stocks
 stats.probplot(df['Stocks'], dist="norm", plot=ax4a)
@@ -154,7 +161,9 @@ ax4a.get_lines()[0].set_markeredgecolor('green')
 ax4a.get_lines()[0].set_alpha(0.6)
 ax4a.get_lines()[0].set_markersize(2.0)
 ax4a.get_lines()[1].set_color('black')
-ax4a.set_title("Stocks (S&P 500)")
+ax4a.set_title("Stocks (S&P 500)", fontsize=14, fontweight='bold')
+ax4a.set_xlabel('Theoretical Quantiles', fontsize=12, fontweight='bold')
+ax4a.set_ylabel('Ordered Values', fontsize=12, fontweight='bold')
 ax4a.grid(True, alpha=0.3)
 
 # Bonds
@@ -164,7 +173,9 @@ ax4b.get_lines()[0].set_markeredgecolor('red')
 ax4b.get_lines()[0].set_alpha(0.6)
 ax4b.get_lines()[0].set_markersize(2.0)
 ax4b.get_lines()[1].set_color('black')
-ax4b.set_title("Bonds (10Y Treas)")
+ax4b.set_title("Bonds (10Y Treas)", fontsize=14, fontweight='bold')
+ax4b.set_xlabel('Theoretical Quantiles', fontsize=12, fontweight='bold')
+ax4b.set_ylabel('Ordered Values', fontsize=12, fontweight='bold')
 ax4b.grid(True, alpha=0.3)
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
