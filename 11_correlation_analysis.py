@@ -27,8 +27,7 @@ rolling_corr.dropna(inplace=True)
 rolling_corr.name = 'Correlation'
 
 # 4. Align Regimes for Box Plot
-# Merge the daily correlation with the daily regime signal
-analysis_df = pd.DataFrame(rolling_corr).join(macro_df[['Regime']], how='inner') # Inner join to match dates
+analysis_df = pd.DataFrame(rolling_corr).join(macro_df[['Regime']], how='inner')
 
 # ==========================================
 # FIGURE 1: The Clean Timeline
@@ -38,10 +37,12 @@ fig1, ax1 = plt.subplots(figsize=(15, 7))
 ax1.plot(rolling_corr.index, rolling_corr, color='black', linewidth=1.5, label='Stock-Bond Returns Correlation')
 ax1.axhline(0, color='red', linestyle='--', linewidth=1)
 
-ax1.set_title('Historical Stock-Bond Returns Correlation (24M Rolling)', fontsize=14)
-ax1.set_ylabel('Correlation')
-ax1.set_ylim(-1, 1)
+ax1.set_title('Historical Stock-Bond Returns Correlation (24M Rolling)', 
+              fontsize=16, fontweight='bold')                    # ← updated
+ax1.set_ylabel('Correlation', 
+               fontsize=13, fontweight='bold')                   # ← updated
 
+ax1.set_ylim(-1, 1)
 ax1.xaxis.set_major_locator(mdates.YearLocator(3))
 ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
 plt.xticks(rotation=45)
@@ -49,25 +50,26 @@ ax1.grid(True, alpha=0.3)
 ax1.legend()
 
 plt.tight_layout()
-#fig1.savefig(os.path.join(fig_dir, 'correlation_timeline.png'), dpi=300, bbox_inches='tight')
-#print("Figure 1 (Timeline) saved.")
+fig1.savefig(os.path.join(fig_dir, 'correlation_timeline.png'), dpi=300, bbox_inches='tight')
+print("Figure 1 (Timeline) saved.")
 
 # ==========================================
 # FIGURE 2: The Box Plot (Regime Analysis)
 # ==========================================
 fig2, ax2 = plt.subplots(figsize=(10, 7))
 
-# Define Order: Deflationary First, Inflationary Second
 order = ['Goldilocks', 'Deflation', 'Reflation', 'Stagflation']
 palette = {'Goldilocks': 'green', 'Deflation': 'gray', 'Reflation': 'blue', 'Stagflation': 'red'}
 
 sns.boxplot(data=analysis_df, x='Regime', y='Correlation', order=order, palette=palette, ax=ax2, width=0.5)
 
-# Add Zero Line
 ax2.axhline(0, color='black', linestyle='--', linewidth=1)
 
-ax2.set_title('Stock-Bond Correlation by Macro Regime', fontsize=14)
-ax2.set_ylabel('Correlation Distribution')
+ax2.set_title('Stock-Bond Correlation by Macro Regime', 
+              fontsize=16, fontweight='bold')                    # ← updated
+ax2.set_ylabel('Correlation Distribution', 
+               fontsize=13, fontweight='bold')                   # ← updated
+
 ax2.grid(True, alpha=0.3, axis='y')
 
 plt.tight_layout()
