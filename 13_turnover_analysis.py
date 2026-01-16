@@ -60,5 +60,5 @@ print("\n--- Turnover & Friction Report (Consolidated Data) ---")
 print(stats)
 
 # Save
-stats.to_csv(os.path.join(results_dir, 'turnover_stats.csv'))
-print(f"\nReport saved to: {os.path.join(results_dir, 'turnover_stats.csv')}")
+#stats.to_csv(os.path.join(results_dir, 'turnover_stats.csv'))
+#print(f"\nReport saved to: {os.path.join(results_dir, 'turnover_stats.csv')}")
