@@ -1,0 +1,6 @@
+.DS_Store
+tempCodeRunnerFile.*
+node_modules/
+__pycache__/
+*.pyc
+.env
