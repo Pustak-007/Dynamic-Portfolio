@@ -52,14 +52,19 @@ def plot_and_save_period(start_date, end_date, period_name, filename, highlight_
     ax2.grid(True, alpha=0.3)
     ax2.legend(loc='upper right')
 
-    # --- PANEL 3: EQUITY ---
+    # --- PANEL 3: EQUITY (ALL ASSETS) ---
+    # Plot Components (Background)
+    ax3.plot(port_sub.index, port_sub['Stock_Equity'], color='green', linewidth=1.5, alpha=0.6, label='Stocks (S&P 500)')
+    ax3.plot(port_sub.index, port_sub['Bond_Equity'], color='red', linewidth=1.5, alpha=0.6, label='Bonds (10Y)')
+    
+    # Plot Strategies (Foreground)
+    ax3.plot(port_sub.index, port_sub['60_40_Equity'], color='gray', linewidth=2.0, linestyle='--', label='60/40 Benchmark')
     ax3.plot(port_sub.index, port_sub['Dynamic_Equity'], color='purple', linewidth=2.5, label='Dynamic Strategy')
-    ax3.plot(port_sub.index, port_sub['60_40_Equity'], color='gray', linewidth=1.5, linestyle='--', label='60/40 Benchmark')
     
     ax3.set_ylabel('Portfolio Value ($)', fontweight='bold', fontsize=12)
     ax3.yaxis.set_major_formatter(ScalarFormatter())
     ax3.grid(True, alpha=0.3)
-    ax3.legend(loc='upper left')
+    ax3.legend(loc='upper left', ncol=2)
 
     # Apply Highlight to ALL Axes
     if highlight_period:
@@ -82,10 +87,10 @@ def plot_and_save_period(start_date, end_date, period_name, filename, highlight_
     plt.show()
 
 # 4. Run & Save
-# Post-COVID (Highlight 2022 Shock)
-plot_and_save_period('2020-01-01', '2025-01-01', 'Post-COVID Shock', 'zoom_2020_post_covid.png', 
+# Post-COVID
+plot_and_save_period('2020-01-01', '2024-12-31', 'Post-COVID Shock', 'zoom_2020_post_covid.png', 
                      highlight_period=('2022-08-01', '2022-10-01'))
 
-# Post-DotCom (Highlight 2002 Whipsaw)
+# Post-DotCom
 plot_and_save_period('2001-01-01', '2007-12-31', 'Post-DotCom Transition', 'zoom_2001_whipsaw.png',
                      highlight_period=('2002-06-01', '2002-08-01'))
