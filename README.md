@@ -52,7 +52,7 @@ This project requires access to institutional-grade financial data. It is **not*
 ---
 
 ## 4. Repository Structure
-The codebase is modularized into **14 sequential steps** to ensure reproducibility and logical flow.
+The codebase is modularized into **15 sequential steps** to ensure reproducibility and logical flow.
 
 ### Phase I: Data Engineering & Benchmarking
 *   `01_construct_benchmark.py`: Downloads CRSP/FRED data, synthesizes Bond Price returns from Yields, and constructs the 60/40 Benchmark.
@@ -77,6 +77,9 @@ The codebase is modularized into **14 sequential steps** to ensure reproducibili
 *   `12_yearly_analysis.py`: Generates the "Heatmap" of calendar year returns.
 *   `13_turnover_analysis.py`: Calculates Portfolio Turnover and Friction Costs (Net CAGR).
 *   `14_create_dashboard.py`: Aggregates all key charts and tables into a single High-Res "Tear Sheet."
+*   `15_inspect_period.py`: Allows focused analysis of specific time windows to examine performance and behavior across different macroeconomic regimes.
+
+
 
 ---
 
@@ -95,7 +98,7 @@ The scripts automatically generate the following folder structure:
     ```bash
     pip install pandas numpy matplotlib seaborn scipy fredapi wrds
     ```
-3.  Run the modules in numerical order (01 -> 14).
+3.  Run the modules in numerical order (01 -> 16).
     *   *Note:* Module 6 generates the `consolidated_portfolio_rebased.csv` which is the input for all subsequent analysis modules.
 
 ---
